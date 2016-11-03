@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+
+
+datadir=<%= @datadir %>
+outputdir=<%= @scriptdir %>/output
+
+cd $datadir
+for f in *; do
+    if [ -d ${f} ]; then
+        # Will not run if no directories are available
+        timestamp=$(date +"%s")
+        rsync --stats --dry-run -ax $f /tmp > "${outputdir}/rsyncstats_${timestamp}_${f}"
+        getfacl $f  > "${outputdir}/getfacl_${f}"
+   fi
+done
+
