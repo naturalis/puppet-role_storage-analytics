@@ -10,14 +10,33 @@
 class role_storage-analytics (
   $scriptdir            = '/opt/storageanalytics',
   $storage_type         = 'fileshare',
-  $data_lifecycle_stage = 'production',
+  $data_status          = 'production',
+  $data_name            = 'homedir',
   $storage_location     = 'primary-cluster-001',
   $cronminute           = '0',
+  $cronminuterandom     = '59',
   $cronhour             = '0',
+  $cronhourrandom       = '4',
   $cronweekday          = '0',
   $datadir              = '/data',
  )
 {
+
+  case $storage_type {
+    'fileshare': {
+      $scripttemplate = 'gatherfilesharestats.sh.erb'
+      $packages       = ['acl']
+    }
+    'backup': {
+      $scripttemplate = 'gatherbackupstats.sh.erb'
+    }
+  }
+
+  if $packages {
+    package {$packages:
+      ensure      => installed
+    }
+  }
 
   file { $scriptdir:
     ensure        => 'directory',
@@ -32,15 +51,15 @@ class role_storage-analytics (
   file {"${scriptdir}/gatherstats.sh":
     ensure        => 'file',
     mode          => '0755',
-    content       => template('role_iontorrent/gatherstats.sh.erb'),
+    content       => template("role_storage-analytics/${scripttemplate}"),
     require       => File[$scriptdir]
   }
 
   cron { 'gatherstats':
     command       => "${scriptdir}/gatherstats.sh",
     user          => 'root',
-    minute        => $cronminute,
-    hour          => $cronhour,
+    minute        => $cronminute+fqdn_rand($cronminuterandom),
+    hour          => $cronhour+fqdn_rand($cronhourrandom),
     weekday       => $cronweekday,
     require       => File["${scriptdir}/gatherstats.sh"]
   }

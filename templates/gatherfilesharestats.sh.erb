@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+#
+# Script for gathering fileshare stats
+#
+#
+# define variables
+datadir=<%= @datadir %>
+outputdir=<%= @scriptdir %>/output
+
+# create sharelist
+net rpc share list -U anonymous -P nopass > $outputdir/sharelist
+
+# loop through datadir
+cd $datadir
+for f in *; do
+    if [ -d ${f} ]; then
+        # Will not run if no directories are available
+        # get timestamp
+        timestamp=$(date +"%s")
+        # gather stats using rsync dryrun
+        rsync --stats --dry-run -ax $f /tmp > "${outputdir}/rsyncstats_${timestamp}_${f}"
+        # gather acl information using getfacl
+        getfacl $f  > "${outputdir}/getfacl_${f}"
+   fi
+done
+
