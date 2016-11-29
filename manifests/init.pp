@@ -19,6 +19,8 @@ class role_storage-analytics (
   $cronhourrandom       = '4',
   $cronweekday          = '0',
   $datadir              = '/data',
+  $output_file          = '/var/log/storage-analytics.json',
+  $pythonscriptsrepo    = 'https://github.com/naturalis/storage-analytics',
 
 # variables used by config.ini for python scripts
   $admin_endpoint_ip    = '127.0.0.1',
@@ -37,11 +39,19 @@ class role_storage-analytics (
   case $storage_type {
     'fileshare': {
       $scripttemplate = 'gatherfilesharestats.sh.erb'
-      $packages       = ['acl']
+      $packages       = ['acl','git']
     }
     'backup': {
       $scripttemplate = 'gatherbackupstats.sh.erb'
+      $packages       = ['git']
     }
+  }
+
+# create logrotate
+  file { '/etc/logrotate.d/storage-analytics':
+    ensure  => present,
+    mode    => '0644',
+    content => template('role_storage-analytics/logrotate.erb'),
   }
 
   if $packages {
@@ -59,32 +69,36 @@ class role_storage-analytics (
     require       => File[$scriptdir],
   }
 
-
-  file {"${scriptdir}/gatherstats.sh":
-    ensure        => 'file',
-    mode          => '0755',
-    content       => template("role_storage-analytics/${scripttemplate}"),
-    require       => File[$scriptdir]
+  vcsrepo { "${scriptdir}/scripts":
+    ensure        => present,
+    provider      => git,
+    source        => $pythonscriptsrepo,
+    require       => [File[$scriptdir],Package['git']],
   }
 
-  cron { 'gatherstats':
-    command       => "${scriptdir}/gatherstats.sh",
-    user          => 'root',
-    minute        => $cronminute+fqdn_rand($cronminuterandom),
-    hour          => $cronhour+fqdn_rand($cronhourrandom),
-    weekday       => $cronweekday,
-    require       => File["${scriptdir}/gatherstats.sh"]
-  }
 
-  if ($data_status == 'dev'){
+#  file {"${scriptdir}/gatherstats.sh":
+#    ensure        => 'file',
+#    mode          => '0755',
+#    content       => template("role_storage-analytics/${scripttemplate}"),
+#    require       => File[$scriptdir]
+#  }
 
-    file {"${scriptdir}/config.ini":
+#  cron { 'gatherstats':
+#    command       => "${scriptdir}/gatherstats.sh",
+#    user          => 'root',
+#    minute        => $cronminute+fqdn_rand($cronminuterandom),
+#    hour          => $cronhour+fqdn_rand($cronhourrandom),
+#    weekday       => $cronweekday,
+#    require       => File["${scriptdir}/gatherstats.sh"]
+#  }
+
+    file {"${scriptdir}/scripts/config.ini":
       ensure        => 'file',
       mode          => '0600',
       content       => template('role_storage-analytics/config.ini.erb'),
-      require       => File[$scriptdir]
+      require       => [File[$scriptdir],Vcsrepo["${scriptdir}/scripts"]]
     }
-
 
     class { 'python' :
       version     => 'system',
@@ -103,6 +117,6 @@ class role_storage-analytics (
       timeout      => 0,
       require      => File[$scriptdir]
     }
-  
-  }
+
+
 }

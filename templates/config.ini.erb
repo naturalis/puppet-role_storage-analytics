@@ -9,3 +9,10 @@ ad_domain = <%= @ad_domain %>
 account_mail_to = <%= @account_mail_to %>
 ad_host = <%= @ad_host %>
 ks_ad_group_sync_id = <%= @ks_ad_group_sync_id %>
+
+[fileshare]
+share_folder = <%= @datadir %>
+output_file = <%= @output_file %>
+
+[block_storage_cinder]
+output_file = /tmp/volumeinfo.json
