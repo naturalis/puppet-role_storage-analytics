@@ -21,6 +21,7 @@ class role_storage-analytics (
   $datadir              = '/data',
   $output_file          = '/var/log/storage-analytics.json',
   $pythonscriptsrepo    = 'https://github.com/naturalis/storage-analytics',
+  $pip_packages         = ['scandir','ldap3'],
 
 # variables used by config.ini for python scripts
   $admin_endpoint_ip    = '127.0.0.1',
@@ -38,11 +39,15 @@ class role_storage-analytics (
 
   case $storage_type {
     'fileshare': {
-      $scripttemplate = 'gatherfilesharestats.sh.erb'
-      $packages       = ['acl','git']
+      $script         = 'file-share-linux.py'
+      $packages       = ['acl','git','smbclient']
     }
-    'backup': {
-      $scripttemplate = 'gatherbackupstats.sh.erb'
+    'burp-backup-folder': {
+      $script         = 'backup-burp-linux.py'
+      $packages       = ['git']
+    }
+    'blockstorage-cinder': {
+      $scripttemplate = 'block-storage-cinder.py'
       $packages       = ['git']
     }
   }
@@ -64,59 +69,57 @@ class role_storage-analytics (
     ensure        => 'directory',
   }
 
-  file { "${scriptdir}/output":
-    ensure        => 'directory',
-    require       => File[$scriptdir],
+  file {['/etc/facter','/etc/facter/facts.d/']:
+    ensure => directory,
+  } ->
+  file {'/etc/facter/facts.d/analytics_logs.yaml':
+    ensure  => present,
+    content => template('role_storage-analytics/analytics_logs_fact.erb'),
+    mode    => '0775',
+  }
+
+  exec { "cleanup":
+    path         => '/usr/bin:/usr/sbin:/bin',
+    command      => "rm -rf ${scriptdir}/output ${scriptdir}/virtualenv ${scriptdir}/config.ini ${scriptdir}/gatherstats.sh",
+    onlyif       => "test -e ${scriptdir}/output"
   }
 
   vcsrepo { "${scriptdir}/scripts":
-    ensure        => present,
+    ensure        => latest,
     provider      => git,
     source        => $pythonscriptsrepo,
     require       => [File[$scriptdir],Package['git']],
   }
 
+  file {"${scriptdir}/scripts/config.ini":
+    ensure        => 'file',
+    mode          => '0600',
+    content       => template('role_storage-analytics/config.ini.erb'),
+    require       => [File[$scriptdir],Vcsrepo["${scriptdir}/scripts"]]
+  }
 
-#  file {"${scriptdir}/gatherstats.sh":
-#    ensure        => 'file',
-#    mode          => '0755',
-#    content       => template("role_storage-analytics/${scripttemplate}"),
-#    require       => File[$scriptdir]
-#  }
-
-#  cron { 'gatherstats':
-#    command       => "${scriptdir}/gatherstats.sh",
-#    user          => 'root',
-#    minute        => $cronminute+fqdn_rand($cronminuterandom),
-#    hour          => $cronhour+fqdn_rand($cronhourrandom),
-#    weekday       => $cronweekday,
-#    require       => File["${scriptdir}/gatherstats.sh"]
-#  }
-
-    file {"${scriptdir}/scripts/config.ini":
-      ensure        => 'file',
-      mode          => '0600',
-      content       => template('role_storage-analytics/config.ini.erb'),
-      require       => [File[$scriptdir],Vcsrepo["${scriptdir}/scripts"]]
+  if ($storage_type != 'burp-backup-folder'){
+    cron { 'gatherstats':
+      command       => "cd ${scriptdir}/scripts && /usr/bin/python ${script}",
+      user          => 'root',
+      minute        => $cronminute+fqdn_rand($cronminuterandom),
+      hour          => $cronhour+fqdn_rand($cronhourrandom),
+      weekday       => $cronweekday,
+      require       => File["${scriptdir}/scripts/config.ini"]
     }
+  }
 
-    class { 'python' :
-      version     => 'system',
-      pip         => 'present',
-      dev         => 'present',
-      virtualenv  => 'present'
-    }
+  class { 'python' :
+    version     => 'system',
+    pip         => 'present',
+    dev         => 'present',
+    virtualenv  => 'present'
+  }
 
-    python::virtualenv { 'storageanalytics' :
-      ensure       => present,
-      version      => 'system',
-      systempkgs   => true,
-      venv_dir     => "${scriptdir}/virtualenv",
-      owner        => 'root',
-      group        => 'root',
-      timeout      => 0,
-      require      => File[$scriptdir]
-    }
+  python::pip { $pip_packages :
+    ensure        => 'present',
+   }
+
 
 
 }

@@ -1,5 +1,5 @@
 [Default]
-admin_endpoint_ip = <%= @admin_endpoint_up %>
+admin_endpoint_ip = <%= @admin_endpoint_ip %>
 os_username = <%= @os_username %>
 os_password = <%= @os_password %>
 os_project_name = <%= @os_project_name %>
@@ -16,3 +16,6 @@ output_file = <%= @output_file %>
 
 [block_storage_cinder]
 output_file = /tmp/volumeinfo.json
+
+[backup-burp-linux]
+output_file = <%= @output_file %>
