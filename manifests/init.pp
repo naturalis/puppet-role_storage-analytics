@@ -39,15 +39,15 @@ class role_storage-analytics (
 
   case $storage_type {
     'fileshare': {
-      $script         = 'file-share-linux.py'
+      $script         = 'storage/fileshare/samba.py'
       $packages       = ['acl','git','smbclient']
     }
     'burp-backup-folder': {
-      $script         = 'backup-burp-linux.py'
+      $script         = 'storage/backup/burp.py'
       $packages       = ['git']
     }
     'blockstorage-cinder': {
-      $scripttemplate = 'block-storage-cinder.py'
+      $scripttemplate = 'storage/block/cinder.py'
       $packages       = ['git']
     }
   }
