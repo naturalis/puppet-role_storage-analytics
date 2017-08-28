@@ -39,15 +39,15 @@ class role_storage-analytics (
 
   case $storage_type {
     'fileshare': {
-      $script         = 'storage/fileshare/samba.py'
+      $script         = 'storage.fileshare.samba'
       $packages       = ['acl','git','smbclient']
     }
     'burp-backup-folder': {
-      $script         = 'storage/backup/burp.py'
+      $script         = 'storage.backup.burp'
       $packages       = ['git']
     }
     'blockstorage-cinder': {
-      $scripttemplate = 'storage/block/cinder.py'
+      $scripttemplate = 'storage.block.cinder'
       $packages       = ['git']
     }
   }
@@ -100,7 +100,7 @@ class role_storage-analytics (
 
   if ($storage_type != 'burp-backup-folder'){
     cron { 'gatherstats':
-      command       => "cd ${scriptdir}/scripts && /usr/bin/python ${script}",
+      command       => "cd ${scriptdir}/scripts && /usr/bin/python -m ${script}",
       user          => 'root',
       minute        => $cronminute+fqdn_rand($cronminuterandom),
       hour          => $cronhour+fqdn_rand($cronhourrandom),
