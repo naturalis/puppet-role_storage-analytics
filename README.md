@@ -1,7 +1,7 @@
-puppet-role_storage-analytics
+puppet-role_storage_analytics
 ==================
 
-storage-analytics role manifest for puppet in a foreman environment.
+storage_analytics role manifest for puppet in a foreman environment.
 Deployment of software and scripts supporting https://github.com/naturalis/storage-analytics
 
 Parameters
@@ -25,12 +25,12 @@ Dependencies
 
 Result
 -------------
-Client side installation of all needed software for gathering storage-analytics
+Client side installation of all needed software for gathering storage_analytics
 
 
 Limitations
 -------------
-This module has been built on and tested against Puppet 3 and higher.
+This module has been built on and tested against Puppet 4 and higher.
 
 The module has been tested on:
 - Ubuntu 14.04LTS 

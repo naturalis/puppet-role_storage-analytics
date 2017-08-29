@@ -1,21 +1,21 @@
 [Default]
-admin_endpoint_ip = <%= @admin_endpoint_ip %>
-os_username = <%= @os_username %>
-os_password = <%= @os_password %>
-os_project_name = <%= @os_project_name %>
-ad_user = <%= @ad_user %>
-ad_password = <%= @ad_password %>
-ad_domain = <%= @ad_domain %>
-account_mail_to = <%= @account_mail_to %>
-ad_host = <%= @ad_host %>
-ks_ad_group_sync_id = <%= @ks_ad_group_sync_id %>
+admin_endpoint_ip = <%= scope['::role_storage_analytics::admin_endpoint_ip'] %>
+os_username = <%= scope['::role_storage_analytics::os_username'] %>
+os_password = <%= scope['::role_storage_analytics::os_password'] %>
+os_project_name = <%= scope['::role_storage_analytics::os_project_name'] %>
+ad_user = <%= scope['::role_storage_analytics::ad_user'] %>
+ad_password = <%= scope['::role_storage_analytics::ad_password'] %>
+ad_domain = <%= scope['::role_storage_analytics::ad_domain'] %>
+account_mail_to = <%= scope['::role_storage_analytics::account_mail_to'] %>
+ad_host = <%= scope['::role_storage_analytics::ad_host'] %>
+ks_ad_group_sync_id = <%= scope['::role_storage_analytics::ks_ad_group_sync_id'] %>
 
 [fileshare]
-share_folder = <%= @datadir %>
-output_file = <%= @output_file %>
+share_folder = <%= scope['::role_storage_analytics::datadir'] %>
+output_file = <%= scope['::role_storage_analytics::output_file'] %>
 
 [block_storage_cinder]
 output_file = /tmp/volumeinfo.json
 
 [backup-burp-linux]
-output_file = <%= @output_file %>
+output_file = <%= scope['::role_storage_analytics::output_file'] %>
