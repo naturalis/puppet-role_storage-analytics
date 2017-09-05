@@ -9,7 +9,7 @@
 #
 class role_storage-analytics (
   $scriptdir            = '/opt/storageanalytics',
-  $storage_type         = 'fileshare',
+  $stat_type            = 'fileshare',
   $data_status          = 'production',
   $data_name            = 'homedir',
   $storage_location     = 'primary-cluster-001',
@@ -21,7 +21,6 @@ class role_storage-analytics (
   $datadir              = '/data',
   $output_file          = '/var/log/storage-analytics.json',
   $pythonscriptsrepo    = 'https://github.com/naturalis/storage-analytics',
-  $pip_packages         = ['scandir','ldap3'],
 
 # variables used by config.ini for python scripts
   $admin_endpoint_ip    = '127.0.0.1',
@@ -34,21 +33,34 @@ class role_storage-analytics (
   $account_mail_to      = 'info@info.com',
   $ad_host              = '127.0.0.1',
   $ks_ad_group_sync_id  = 'ae41c863c3474201957e330885deda5e',
+  $elastic_host         = 'localhost',
+  $elastic_port         = '9200',
+  $google_credentials   = '',
+  $cmdb_key             = '',
+  $factsheet_key        = '',
  )
 {
 
-  case $storage_type {
+  case $stat_type {
     'fileshare': {
       $script         = 'storage.fileshare.samba'
       $packages       = ['acl','git','smbclient']
+      $pip_packages   = ['scandir','ldap3']
     }
     'burp-backup-folder': {
       $script         = 'storage.backup.burp'
       $packages       = ['git']
+      $pip_packages   = ['scandir','ldap3']
     }
     'blockstorage-cinder': {
       $scripttemplate = 'storage.block.cinder'
       $packages       = ['git']
+      $pip_packages   = ['scandir','ldap3']
+    }
+    'infra-stats': {
+      $scripttemplate = 'infra_stats'
+      $packages       = ['git']
+      $pip_packages   = ['gspread', 'oauth2client']
     }
   }
 
@@ -98,7 +110,7 @@ class role_storage-analytics (
     require       => [File[$scriptdir],Vcsrepo["${scriptdir}/scripts"]]
   }
 
-  if ($storage_type != 'burp-backup-folder'){
+  if ($stat_type != 'burp-backup-folder'){
     cron { 'gatherstats':
       command       => "cd ${scriptdir}/scripts && /usr/bin/python -m ${script}",
       user          => 'root',
@@ -106,6 +118,15 @@ class role_storage-analytics (
       hour          => $cronhour+fqdn_rand($cronhourrandom),
       weekday       => $cronweekday,
       require       => File["${scriptdir}/scripts/config.ini"]
+    }
+  }
+
+  if ($stat_type == 'infra-stats'){
+    file {"${scriptdir}/scripts/google-authentication.json":
+      ensure        => 'file',
+      mode          => '0600',
+      content       => template('role_storage-analytics/google-authentication.json.erb'),
+      require       => [File[$scriptdir],Vcsrepo["${scriptdir}/scripts"]]
     }
   }
 
