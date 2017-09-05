@@ -1,13 +1,13 @@
-# == Class: role_storage-analytics
+# == Class: role_infra_analytics
 #
-# Manifest for installing additional support software for gathering storage-analytics
+# Manifest for installing additional support software for gathering storage_analytics
 # 
 # === Authors
 #
 # Author Name <hugo.vanduijn@naturalis.nl>
 #
 #
-class role_storage-analytics (
+class role_storage_analytics (
   $scriptdir            = '/opt/storageanalytics',
   $stat_type            = 'fileshare',
   $data_status          = 'production',
@@ -19,8 +19,8 @@ class role_storage-analytics (
   $cronhourrandom       = '4',
   $cronweekday          = '0',
   $datadir              = '/data',
-  $output_file          = '/var/log/storage-analytics.json',
-  $pythonscriptsrepo    = 'https://github.com/naturalis/storage-analytics',
+  $output_file          = '/var/log/storage_analytics.json',
+  $pythonscriptsrepo    = 'https://github.com/naturalis/storage_analytics',
 
 # variables used by config.ini for python scripts
   $admin_endpoint_ip    = '127.0.0.1',
@@ -41,7 +41,7 @@ class role_storage-analytics (
  )
 {
 
-  case $stat_type {
+  case $role_storage_analytics::stat_type {
     'fileshare': {
       $script         = 'storage.fileshare.samba'
       $packages       = ['acl','git','smbclient']
@@ -65,10 +65,10 @@ class role_storage-analytics (
   }
 
 # create logrotate
-  file { '/etc/logrotate.d/storage-analytics':
+  file { '/etc/logrotate.d/storage_analytics':
     ensure  => present,
     mode    => '0644',
-    content => template('role_storage-analytics/logrotate.erb'),
+    content => template('role_storage_analytics/logrotate.erb'),
   }
 
   if $packages {
@@ -77,7 +77,7 @@ class role_storage-analytics (
     }
   }
 
-  file { $scriptdir:
+  file { $role_storage_analytics::scriptdir:
     ensure        => 'directory',
   }
 
@@ -86,46 +86,46 @@ class role_storage-analytics (
   } ->
   file {'/etc/facter/facts.d/analytics_logs.yaml':
     ensure  => present,
-    content => template('role_storage-analytics/analytics_logs_fact.erb'),
+    content => template('role_storage_analytics/analytics_logs_fact.erb'),
     mode    => '0775',
   }
 
   exec { "cleanup":
     path         => '/usr/bin:/usr/sbin:/bin',
-    command      => "rm -rf ${scriptdir}/output ${scriptdir}/virtualenv ${scriptdir}/config.ini ${scriptdir}/gatherstats.sh",
-    onlyif       => "test -e ${scriptdir}/output"
+    command      => "rm -rf ${role_storage_analytics::scriptdir}/output ${role_storage_analytics::scriptdir}/virtualenv ${role_storage_analytics::scriptdir}/config.ini ${role_storage_analytics::scriptdir}/gatherstats.sh",
+    onlyif       => "test -e ${role_storage_analytics::scriptdir}/output"
   }
 
-  vcsrepo { "${scriptdir}/scripts":
+  vcsrepo { "${role_storage_analytics::scriptdir}/scripts":
     ensure        => latest,
     provider      => git,
-    source        => $pythonscriptsrepo,
-    require       => [File[$scriptdir],Package['git']],
+    source        => $role_storage_analytics::pythonscriptsrepo,
+    require       => [File[$role_storage_analytics::scriptdir],Package['git']],
   }
 
-  file {"${scriptdir}/scripts/config.ini":
+  file {"${role_storage_analytics::scriptdir}/scripts/config.ini":
     ensure        => 'file',
     mode          => '0600',
-    content       => template('role_storage-analytics/config.ini.erb'),
-    require       => [File[$scriptdir],Vcsrepo["${scriptdir}/scripts"]]
+    content       => template('role_storage_analytics/config.ini.erb'),
+    require       => [File[$role_storage_analytics::scriptdir],Vcsrepo["${role_storage_analytics::scriptdir}/scripts"]]
   }
 
-  if ($stat_type != 'burp-backup-folder'){
+  if ($role_storage_analytics::stat_type != 'burp-backup-folder'){
     cron { 'gatherstats':
-      command       => "cd ${scriptdir}/scripts && /usr/bin/python -m ${script}",
+      command       => "cd ${role_storage_analytics::scriptdir}/scripts && /usr/bin/python -m ${script}",
       user          => 'root',
-      minute        => $cronminute+fqdn_rand($cronminuterandom),
-      hour          => $cronhour+fqdn_rand($cronhourrandom),
-      weekday       => $cronweekday,
-      require       => File["${scriptdir}/scripts/config.ini"]
+      minute        => $role_storage_analytics::cronminute+fqdn_rand($role_storage_analytics::cronminuterandom),
+      hour          => $role_storage_analytics::cronhour+fqdn_rand($role_storage_analytics::cronhourrandom),
+      weekday       => $role_storage_analytics::cronweekday,
+      require       => File["${role_storage_analytics::scriptdir}/scripts/config.ini"]
     }
   }
 
-  if ($stat_type == 'infra-stats'){
+  if ($role_storage_analytics::stat_type == 'infra-stats'){
     file {"${scriptdir}/scripts/google-authentication.json":
       ensure        => 'file',
       mode          => '0600',
-      content       => template('role_storage-analytics/google-authentication.json.erb'),
+      content       => template('role_storage_analytics/google-authentication.json.erb'),
       require       => [File[$scriptdir],Vcsrepo["${scriptdir}/scripts"]]
     }
   }
@@ -137,7 +137,7 @@ class role_storage-analytics (
     virtualenv  => 'present'
   }
 
-  python::pip { $pip_packages :
+  python::pip { $role_storage_analytics::pip_packages :
     ensure        => 'present',
    }
 
