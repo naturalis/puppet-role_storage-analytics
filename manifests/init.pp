@@ -20,7 +20,7 @@ class role_storage_analytics (
   $cronweekday          = '0',
   $datadir              = '/data',
   $output_file          = '/var/log/storage_analytics.json',
-  $pythonscriptsrepo    = 'https://github.com/naturalis/storage_analytics',
+  $pythonscriptsrepo    = 'https://github.com/naturalis/storage-analytics',
 
 # variables used by config.ini for python scripts
   $admin_endpoint_ip    = '127.0.0.1',
