@@ -53,12 +53,12 @@ class role_storage_analytics (
       $pip_packages   = ['scandir','ldap3']
     }
     'blockstorage-cinder': {
-      $scripttemplate = 'storage.block.cinder'
+      $script         = 'storage.block.cinder'
       $packages       = ['git']
       $pip_packages   = ['scandir','ldap3']
     }
     'infra-stats': {
-      $scripttemplate = 'infra_stats'
+      $script         = 'infra_stats'
       $packages       = ['git']
       $pip_packages   = ['gspread', 'oauth2client']
     }
