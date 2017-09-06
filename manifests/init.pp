@@ -60,7 +60,7 @@ class role_storage_analytics (
     'infra-stats': {
       $script         = 'infra_stats'
       $packages       = ['git']
-      $pip_packages   = ['gspread', 'oauth2client']
+      $pip_packages   = ['gspread', 'oauth2client', 'elasticsearch']
     }
   }
 
