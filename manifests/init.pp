@@ -39,7 +39,7 @@ class role_storage_analytics (
   $google_reports_credentials   = '',
   $cmdb_key                     = '',
   $factsheet_key                = '',
- )
+  )
 {
 
   case $role_storage_analytics::stat_type {
@@ -122,9 +122,6 @@ class role_storage_analytics (
     }
   }
 
-  if ($role_storage_analytics::stat_type == 'burp-backup-folder'){
-  }
-
   if ($role_storage_analytics::stat_type == 'infra-stats'){
     cron { 'gsuitestats':
       command       => "cd ${role_storage_analytics::scriptdir}/scripts && /usr/bin/python -m storage.web.gsuite",
@@ -147,7 +144,7 @@ class role_storage_analytics (
       mode          => '0600',
       content       => template('role_storage_analytics/google-docs-authentication.json.erb'),
       require       => [File[$scriptdir],Vcsrepo["${scriptdir}/scripts"]]
-    },
+    }
     file {"${scriptdir}/scripts/google-reports-authentication.json":
       ensure        => 'file',
       mode          => '0600',
@@ -165,6 +162,6 @@ class role_storage_analytics (
 
   python::pip { $role_storage_analytics::pip_packages :
     ensure        => 'present',
-   }
+  }
 
 }
