@@ -111,7 +111,7 @@ class role_storage_analytics (
     require       => [File[$role_storage_analytics::scriptdir],Vcsrepo["${role_storage_analytics::scriptdir}/scripts"]]
   }
 
-  if ($role_storage_analytics::stat_type == 'fileshare' or 'blockstorage-cinder'){
+  if ($role_storage_analytics::stat_type == 'fileshare') or ($role_storage_analytics::stat_type == 'blockstorage-cinder'){
     cron { 'gatherstats':
       command       => "cd ${role_storage_analytics::scriptdir}/scripts && /usr/bin/python -m ${script}",
       user          => 'root',
