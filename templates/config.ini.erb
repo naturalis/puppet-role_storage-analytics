@@ -24,7 +24,12 @@ storage_location = <%= scope['::role_storage_analytics::storage_location'] %>
 output_file = <%= scope['::role_storage_analytics::output_file'] %>
 
 [infra_stats]
-google_credentials = ./google-authentication.json
+google_credentials = ./google-docs-authentication.json
 cmdb_key = <%= scope['::role_storage_analytics::cmdb_key'] %>
 factsheet_key = <%= scope['::role_storage_analytics::factsheet_key'] %>
 output_file = <%= scope['::role_storage_analytics::output_file'] %>
+
+[gsuite]
+google_credentials = ./google-reports-authentication.json
+output_file = <%= scope['::role_storage_analytics::output_file'] %>
+

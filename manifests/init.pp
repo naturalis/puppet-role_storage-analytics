@@ -23,21 +23,22 @@ class role_storage_analytics (
   $pythonscriptsrepo    = 'https://github.com/naturalis/storage-analytics',
 
 # variables used by config.ini for python scripts
-  $admin_endpoint_ip    = '127.0.0.1',
-  $os_username          = 'admin',
-  $os_password          = 'secret',
-  $os_project_name      = 'admin',
-  $ad_user              = 'your_ad_user',
-  $ad_password          = 'your_ad_password',
-  $ad_domain            = 'SHORT_DOMAIN_NAME',
-  $account_mail_to      = 'info@info.com',
-  $ad_host              = '127.0.0.1',
-  $ks_ad_group_sync_id  = 'ae41c863c3474201957e330885deda5e',
-  $elastic_host         = 'localhost',
-  $elastic_port         = '9200',
-  $google_credentials   = '',
-  $cmdb_key             = '',
-  $factsheet_key        = '',
+  $admin_endpoint_ip            = '127.0.0.1',
+  $os_username                  = 'admin',
+  $os_password                  = 'secret',
+  $os_project_name              = 'admin',
+  $ad_user                      = 'your_ad_user',
+  $ad_password                  = 'your_ad_password',
+  $ad_domain                    = 'SHORT_DOMAIN_NAME',
+  $account_mail_to              = 'info@info.com',
+  $ad_host                      = '127.0.0.1',
+  $ks_ad_group_sync_id          = 'ae41c863c3474201957e330885deda5e',
+  $elastic_host                 = 'localhost',
+  $elastic_port                 = '9200',
+  $google_docs_credentials      = '',
+  $google_reports_credentials   = '',
+  $cmdb_key                     = '',
+  $factsheet_key                = '',
  )
 {
 
@@ -60,7 +61,7 @@ class role_storage_analytics (
     'infra-stats': {
       $script         = 'infra_stats'
       $packages       = ['git']
-      $pip_packages   = ['gspread', 'oauth2client', 'elasticsearch']
+      $pip_packages   = ['gspread', 'oauth2client', 'elasticsearch', 'google-api-python-client']
     }
   }
 
@@ -110,7 +111,7 @@ class role_storage_analytics (
     require       => [File[$role_storage_analytics::scriptdir],Vcsrepo["${role_storage_analytics::scriptdir}/scripts"]]
   }
 
-  if ($role_storage_analytics::stat_type != 'burp-backup-folder'){
+  if ($role_storage_analytics::stat_type == 'fileshare' or 'blockstorage-cinder'){
     cron { 'gatherstats':
       command       => "cd ${role_storage_analytics::scriptdir}/scripts && /usr/bin/python -m ${script}",
       user          => 'root',
@@ -121,11 +122,36 @@ class role_storage_analytics (
     }
   }
 
+  if ($role_storage_analytics::stat_type == 'burp-backup-folder'){
+  }
+
   if ($role_storage_analytics::stat_type == 'infra-stats'){
-    file {"${scriptdir}/scripts/google-authentication.json":
+    cron { 'gsuitestats':
+      command       => "cd ${role_storage_analytics::scriptdir}/scripts && /usr/bin/python -m storage.web.gsuite",
+      user          => 'root',
+      minute        => $role_storage_analytics::cronminute,
+      hour          => $role_storage_analytics::cronhour,
+      weekday       => $role_storage_analytics::cronweekday,
+      require       => File["${role_storage_analytics::scriptdir}/scripts/config.ini"]
+    }
+    cron { 'infrastats':
+      command       => "cd ${role_storage_analytics::scriptdir}/scripts && /usr/bin/python -m ${script}",
+      user          => 'root',
+      minute        => $role_storage_analytics::cronminute + 30,
+      hour          => $role_storage_analytics::cronhour + 1,
+      weekday       => $role_storage_analytics::cronweekday,
+      require       => File["${role_storage_analytics::scriptdir}/scripts/config.ini"]
+    }
+    file {"${scriptdir}/scripts/google-docs-authentication.json":
       ensure        => 'file',
       mode          => '0600',
-      content       => template('role_storage_analytics/google-authentication.json.erb'),
+      content       => template('role_storage_analytics/google-docs-authentication.json.erb'),
+      require       => [File[$scriptdir],Vcsrepo["${scriptdir}/scripts"]]
+    },
+    file {"${scriptdir}/scripts/google-reports-authentication.json":
+      ensure        => 'file',
+      mode          => '0600',
+      content       => template('role_storage_analytics/google-reports-authentication.json.erb'),
       require       => [File[$scriptdir],Vcsrepo["${scriptdir}/scripts"]]
     }
   }
@@ -140,7 +166,5 @@ class role_storage_analytics (
   python::pip { $role_storage_analytics::pip_packages :
     ensure        => 'present',
    }
-
-
 
 }
