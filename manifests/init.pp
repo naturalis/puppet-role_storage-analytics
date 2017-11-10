@@ -1,4 +1,4 @@
-# == Class: role_infra_analytics
+#_gsuite == Class: role_infra_analytics
 #
 # Manifest for installing additional support software for gathering storage_analytics
 # 
@@ -20,6 +20,7 @@ class role_storage_analytics (
   $cronweekday          = '0',
   $datadir              = '/data',
   $output_file          = '/var/log/storage-analytics.json',
+  $output_file_gsuite   = '/var/log/storage-analytics-gsuite.json',
   $pythonscriptsrepo    = 'https://github.com/naturalis/storage-analytics',
 
 # variables used by config.ini for python scripts
