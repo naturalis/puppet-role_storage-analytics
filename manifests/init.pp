@@ -62,7 +62,7 @@ class role_storage_analytics (
     'infra-stats': {
       $script         = 'infra_stats'
       $packages       = ['git']
-      $pip_packages   = ['gspread', 'oauth2client', 'elasticsearch', 'google-api-python-client']
+      $pip_packages   = ['oauth2client', 'elasticsearch', 'google-api-python-client']
     }
   }
 
@@ -151,6 +151,10 @@ class role_storage_analytics (
       mode          => '0600',
       content       => template('role_storage_analytics/google-reports-authentication.json.erb'),
       require       => [File[$scriptdir],Vcsrepo["${scriptdir}/scripts"]]
+    }
+    python::pip { 'gspread' :
+      pkgname       => 'gspread',
+      ensure        => '3.0.1'
     }
   }
 
