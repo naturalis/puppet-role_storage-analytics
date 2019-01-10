@@ -1,4 +1,4 @@
-<%= scope['::role_storage_analytics::output_file'] %>
+/var/log/*.json
  {
         rotate 7
         weekly
@@ -6,4 +6,5 @@
         delaycompress
         missingok
         notifempty
+        su root root
  }

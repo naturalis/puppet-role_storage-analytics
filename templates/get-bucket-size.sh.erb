@@ -1,0 +1,93 @@
+#!/bin/bash
+#
+# retrieve size statistics of all aws restic buckets and return in json
+# requires jq and git
+#
+#
+
+ANSIBLE_RESTIC_REPODIR=<%= scope['::role_storage_analytics::aws::ansible_restic_repodir'] %>
+ANSIBLE_RESTIC_REPO=<%= scope['::role_storage_analytics::aws::ansible_restic_repo'] %>
+ANSIBLE_RESTIC_REPOFILE=<%= scope['::role_storage_analytics::aws::ansible_restic_repodir'] %>/<%= scope['::role_storage_analytics::aws::ansible_restic_repofile'] %>
+DATA_ID=<%= scope['::role_storage_analytics::aws::data_id'] %>
+DATA_STATUS=<%= scope['::role_storage_analytics::aws::data_status'] %>
+DATA_HOST=<%= scope['::role_storage_analytics::aws::data_host'] %>
+STORAGE_TYPE=<%= scope['::role_storage_analytics::aws::storage_type'] %>
+STORAGE_LOCATION=<%= scope['::role_storage_analytics::aws::storage_location'] %>
+STORAGE_POOL=<%= scope['::role_storage_analytics::aws::storage_pool'] %>
+JSON_OUTPUT_FILE=<%= scope['::role_storage_analytics::aws::json_output_file'] %>
+
+DATE=`date +"%Y-%m-%dT%T.000Z"`
+HOST=`hostname -f`
+
+# Aws variables
+export AWS_DEFAULT_REGION=<%= scope['::role_storage_analytics::aws::aws_default_region'] %>
+export AWS_ACCESS_KEY_ID=<%= scope['::role_storage_analytics::aws::aws_access_key_id'] %>
+export AWS_SECRET_ACCESS_KEY=<%= scope['::role_storage_analytics::aws::aws_secret_access_key'] %>
+
+# clone repo if no repo found
+if [ ! -d "$ANSIBLE_RESTIC_REPODIR" ]; then
+  git clone $ANSIBLE_RESTIC_REPO $ANSIBLE_RESTIC_REPODIR 
+fi
+
+# pull latest version
+(cd /opt/ansible-manage-restic-keys && git pull)
+
+cat $ANSIBLE_RESTIC_REPOFILE | grep "\[restic-clients\]" -A 99999 |  grep -v "\[restic-clients\]" | while read client
+do
+now=$(date +%s)
+data_amount=`aws cloudwatch get-metric-statistics \
+                            --namespace AWS/S3 \
+                            --start-time "$(echo "$now - 86400" | bc)" \
+                            --end-time "$now" \
+                            --period 86400 \
+                            --statistics Average \
+                            --metric-name NumberOfObjects \
+                            --dimensions Name=BucketName,Value="restic-$client" Name=StorageType,Value=AllStorageTypes \
+                            | jq '.Datapoints | .[] | .Average'`
+data_size=`aws cloudwatch get-metric-statistics \
+                            --namespace AWS/S3 \
+                            --start-time "$(echo "$now - 86400" | bc)" \
+                            --end-time "$now" \
+                            --period 86400 \
+                            --statistics Average \
+                            --metric-name BucketSizeBytes \
+                            --dimensions Name=BucketName,Value="restic-$client" Name=StorageType,Value=StandardStorage \
+                            | jq '.Datapoints | .[] | .Average'`
+
+jq -c --arg key0   '@timestamp' \
+   --arg value0 "$DATE" \
+   --arg key1   'host' \
+   --arg value1 "$HOST" \
+   --arg key2   'data_set' \
+   --argjson value2 "{\"name\":\"Restic backup $client\",\"id\":\"restic-$client\"}" \
+   --arg key3   'data_id' \
+   --arg value3 "$DATA_ID" \
+   --arg key4   "data_status" \
+   --arg value4 "$DATA_STATUS" \
+   --arg key5   "data_size" \
+   --arg value5 "$data_size" \
+   --arg key6   "data_amount" \
+   --arg value6 "$data_amount" \
+   --arg key7   "data_owner" \
+   --argjson value7 "{\"name\":\"ICT Infra\"}" \
+   --arg key8   "data_groups" \
+   --argjson value8 "{}" \
+   --arg key9   "data_host" \
+   --arg value9 "$DATA_HOST" \
+   --arg key10   "data_service_tags" \
+   --argjson value10 "[\"restic\",\"$client\"]" \
+   --arg key11   "storage_id" \
+   --arg value11 "restic-$client" \
+   --arg key12   "storage_path" \
+   --arg value12  "s3:https://s3.amazonaws.com/restic-$client" \
+   --arg key13   "storage_type" \
+   --arg value13 "$STORAGE_TYPE" \
+   --arg key14   "storage_location" \
+   --arg value14 "$STORAGE_LOCATION" \
+   --arg key15   "storage_pool" \
+   --arg value15 "$STORAGE_POOL" \
+   '. | .[$key0]=$value0 | .[$key1]=$value1 | .[$key2]=$value2 | .[$key3]=$value3 | .[$key4]=$value4 | .[$key5]=$value5 | .[$key6]=$value6 | .[$key7]=$value7 | .[$key8]=$value8 | .[$key9]=$value9 | .[$key10]=$value10 | .[$key11]=$value11 | .[$key12]=$value12 | .[$key13]=$value13 | .[$key14]=$value14 | .[$key15]=$value15'\
+   <<<'{}' >> $JSON_OUTPUT_FILE
+
+done
+
