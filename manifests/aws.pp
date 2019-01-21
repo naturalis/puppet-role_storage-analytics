@@ -52,7 +52,7 @@ class role_storage_analytics::aws (
 
 # create cronjob
   cron { 'awsstats':
-    command       => "cd ${role_storage_analytics::aws::scriptdir} && ./get-bucket-size.sh.erb",
+    command       => "cd ${role_storage_analytics::aws::scriptdir} && ./get-bucket-size.sh",
     user          => 'root',
     minute        => $role_storage_analytics::aws::cronminute,
     hour          => $role_storage_analytics::aws::cronhour,
